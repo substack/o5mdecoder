@@ -94,7 +94,7 @@ namespace o5mdecoder {
           j = fminl(length, pos + doclen - docsize);
           memcpy(docbuf+docsize, buffer+pos, j-pos);
           docsize += j - pos;
-          pos += j - 1;
+          pos = j - 1;
           printf("cmp %u, %u; j=%u\n", docsize, doclen, j);
           if (docsize == doclen) {
             printf("doc %d bytes\n", docsize);
