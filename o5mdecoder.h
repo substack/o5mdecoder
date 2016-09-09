@@ -19,6 +19,25 @@ namespace o5mdecoder {
     _DATA = 4,
     _END = 5
   };
+  size_t signedDelta (int64_t *d, char *data, size_t len) {
+    unsigned char m = 0x3f;
+    size_t i;
+    int64_t npow = 1 - 2*((data[0]>>6)&1);
+    for (i = 0; i < len; i++) {
+      unsigned char b = data[i];
+      *d += (b & m) * npow;
+      npow *= m;
+      if (b < 0x80) break;
+      m = 0x7f;
+    }
+    (*d)--;
+    return i;
+  }
+  size_t signedDelta (uint64_t *d, char *data, size_t len) {
+    return signedDelta((int64_t*)d, data, len);
+  }
+  size_t xunsigned () {
+  }
 
   class Doc {
     public:
@@ -31,8 +50,15 @@ namespace o5mdecoder {
     char *user;
     size_t _taglen;
     char *_tags;
+    Doc () {
+      id = 2;
+      version = 0;
+      timestamp = 0;
+      changeset = 0;
+      uid = 0;
+      user = NULL;
+    }
     void getTag (char **key, char **value) {
-      
     }
   };
   class Node : public Doc {
@@ -82,10 +108,8 @@ namespace o5mdecoder {
         } else if (_state == _TYPE) {
           _state = _LEN;
           doc->type = b;
-          printf("type=0x%x\n", doc->type);
         } else if (_state == _LEN) {
           doclen += (b & 0x7f) * docpow;
-          printf("doclen=%u, docpow=%u, b=%u\n", doclen, docpow, b);
           docpow *= 0x80;
           if (b < 0x80) {
             _state = _DATA;
@@ -94,22 +118,24 @@ namespace o5mdecoder {
           j = fminl(length, pos + doclen - docsize);
           memcpy(docbuf+docsize, buffer+pos, j-pos);
           docsize += j - pos;
-          pos = j - 1;
-          printf("cmp %u, %u; j=%u\n", docsize, doclen, j);
+          pos = j;
           if (docsize == doclen) {
-            printf("doc %d bytes\n", docsize);
-            // parse docbuf...
+            _parseDoc(doc, doclen, docbuf);
             _state = _TYPE;
             doclen = 0;
             docpow = 1;
             docsize = 0;
-            //return true;
+            return true;
           }
         } else if (_state == _END) {
           // ...
         }
       }
       return false;
+    }
+    void _parseDoc (Doc *doc, size_t len, char *buf) {
+      size_t pos = 0;
+      pos += signedDelta(&(doc->id), buf+pos, len-pos);
     }
   };
 }
