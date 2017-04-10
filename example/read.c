@@ -5,6 +5,7 @@
 int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
   char *dbuf = (char*) malloc(4096);
+  char *key, *value;
   o5mdecoder::Decoder d(dbuf);
   o5mdecoder::Node node;
   o5mdecoder::Way way;
@@ -16,12 +17,18 @@ int main (int argc, char **argv) {
     try {
       while (d.read(&node, &way, &rel)) {
         if (d.type == o5mdecoder::NODE) {
-          printf("<node id=\"%d\" lon=\"%f\" lat=\"%f\"/>\n",
+          printf("<node id=\"%d\" lon=\"%f\" lat=\"%f\">\n",
             node.id, node.lon, node.lat);
+          while (node.getTag(&key, &value)) {
+            printf("  <tag k=\"%s\" v=\"%s\"/>\n");
+          }
+          printf("</node>\n");
         } else if (d.type == o5mdecoder::WAY) {
-          printf("<way id=\"%d\"/>\n", way.id);
+          printf("<way id=\"%d\">\n", way.id);
+          printf("</way>\n");
         } else if (d.type == o5mdecoder::REL) {
-          printf("<relation id=\"%d\"/>\n", rel.id);
+          printf("<relation id=\"%d\">\n", rel.id);
+          printf("</relation>\n");
         }
       }
     } catch (char *err) {

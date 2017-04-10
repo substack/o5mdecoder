@@ -19,7 +19,7 @@ namespace o5mdecoder {
     _DATA = 4,
     _END = 5
   };
-  size_t signedDelta (int64_t *d, char *data, size_t len) {
+  size_t signedDelta (int64_t *d, size_t len, char *data) {
     size_t i;
     unsigned char b, m = 0x40;
     int64_t npow = data[0]%2 ? -1 : 1;
@@ -32,8 +32,8 @@ namespace o5mdecoder {
     }
     return i+1;
   }
-  size_t signedDelta (uint64_t *d, char *data, size_t len) {
-    return signedDelta((int64_t*)d, data, len);
+  size_t signedDelta (uint64_t *d, size_t len, char *data) {
+    return signedDelta((int64_t*)d, len, data);
   }
   size_t xunsigned () {
   }
@@ -48,6 +48,7 @@ namespace o5mdecoder {
     uint64_t uid;
     char *user;
     size_t _taglen;
+    size_t _tagpos;
     char *_tags;
     Doc () {
       id = 0;
@@ -57,7 +58,9 @@ namespace o5mdecoder {
       uid = 0;
       user = NULL;
     }
-    void getTag (char **key, char **value) {
+    bool getTag (char **key, char **value) {
+      size_t i = 0;
+      return false;
     }
   };
   class Node : public Doc {
@@ -151,7 +154,7 @@ namespace o5mdecoder {
     size_t _parseDoc (Doc *doc, size_t len, char *buf) {
       size_t pos = 0;
       if (_prevDoc) doc->id = _prevDoc->id;
-      pos += signedDelta(&(doc->id), buf+pos, len-pos); // id
+      pos += signedDelta(&(doc->id), len-pos, buf+pos); // id
       if (buf[pos] == 0x00) { // version
         pos++;
       } else {
@@ -159,16 +162,22 @@ namespace o5mdecoder {
       }
       return pos;
     }
+    size_t _parseTags (Doc *doc, size_t len, char *buf) {
+      doc->_tags = buf;
+      doc->_taglen = len;
+      doc->_tagpos = 0;
+    }
     void _parseNode (Node *node, size_t len, char *buf) {
       size_t pos = _parseDoc(node, len, buf);
       int64_t ulat = _prevNode.ulat;
       int64_t ulon = _prevNode.ulon;
-      pos += signedDelta(&ulon, buf+pos, len-pos); // lon
-      pos += signedDelta(&ulat, buf+pos, len-pos); // lat
+      pos += signedDelta(&ulon, len-pos, buf+pos); // lon
+      pos += signedDelta(&ulat, len-pos, buf+pos); // lat
       node->ulon = ulon;
       node->ulat = ulat;
       node->lon = ((double) ulon) / 1e7;
       node->lat = ((double) ulat) / 1e7;
+      pos += _parseTags(node, len-pos, buf+pos);
       _prevNode = *node;
       _prevDoc = node;
     }
