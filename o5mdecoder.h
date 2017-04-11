@@ -35,7 +35,17 @@ namespace o5mdecoder {
   size_t signedDelta (uint64_t *d, size_t len, char *data) {
     return signedDelta((int64_t*)d, len, data);
   }
-  size_t xunsigned () {
+  size_t xunsigned (uint64_t *d, size_t len, char *data) {
+    size_t i;
+    unsigned char b, m = 0x80;
+    int64_t npow = 1;
+    for (i = 0; i < len; i++) {
+      b = data[i];
+      *d += (b % m);
+      if (b < 0x80) break;
+      npow *= m;
+    }
+    return i+1;
   }
 
   class Doc {
@@ -70,7 +80,7 @@ namespace o5mdecoder {
         _tagpos++;
         return true;
       } else {
-        fprintf(stderr,"string ref not implemented\n");
+        fprintf(stderr,"table ref not implemented\n");
       }
       return false;
     }
@@ -197,11 +207,19 @@ namespace o5mdecoder {
     }
     void _parseWay (Way *way, size_t len, char *buf) {
       size_t pos = _parseDoc(way, len, buf);
+      uint64_t length = 0;
+      pos += xunsigned(&length, len-pos, buf+pos);
+      pos += length;
+      pos += _parseTags(way, len-pos, buf+pos);
       _prevWay = *way;
       _prevDoc = way;
     }
     void _parseRel (Rel *rel, size_t len, char *buf) {
       size_t pos = _parseDoc(rel, len, buf);
+      uint64_t length = 0;
+      pos += xunsigned(&length, len-pos, buf+pos);
+      pos += length;
+      pos += _parseTags(rel, len-pos, buf+pos);
       _prevRel = *rel;
       _prevDoc = rel;
     }
