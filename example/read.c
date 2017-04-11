@@ -6,7 +6,8 @@ int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
   char *dbuf = (char*) malloc(4096);
   char *table = (char*) malloc(256*15000);
-  char *key, *value;
+  char *key, *value, *memtype, *memrole;
+  uint64_t ref;
   o5mdecoder::Decoder d(dbuf,table);
   o5mdecoder::Node node;
   o5mdecoder::Way way;
@@ -26,12 +27,19 @@ int main (int argc, char **argv) {
           printf("</node>\n");
         } else if (d.type == o5mdecoder::WAY) {
           printf("<way id=\"%d\">\n", way.id);
+          while (way.getRef(&ref)) {
+            printf("  <nd ref=\"%u\"/>\n");
+          }
           while (way.getTag(&key, &value)) {
             printf("  <tag k=\"%s\" v=\"%s\"/>\n",key,value);
           }
           printf("</way>\n");
         } else if (d.type == o5mdecoder::REL) {
           printf("<relation id=\"%d\">\n", rel.id);
+          while (rel.getMember(&memtype,&ref,&memrole)) {
+            printf("  <member type=\"%s\" ref=\"%u\" role=\"%s\"/>\n",
+              memtype, ref, memrole);
+          }
           while (rel.getTag(&key, &value)) {
             printf("  <tag k=\"%s\" v=\"%s\"/>\n",key,value);
           }

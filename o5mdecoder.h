@@ -100,9 +100,15 @@ namespace o5mdecoder {
   };
   class Way : public Doc {
     public:
+    bool getRef (uint64_t *ref) {
+      return false;
+    }
   };
   class Rel : public Doc {
     public:
+    bool getMember (char **memtype, uint64_t *ref, char **memrole) {
+      return false;
+    }
   };
   class Decoder {
     public:
