@@ -60,6 +60,7 @@ namespace o5mdecoder {
     size_t _taglen;
     size_t _tagpos;
     char *_tags;
+    char *_table;
     Doc () {
       id = 0;
       version = 0;
@@ -67,6 +68,7 @@ namespace o5mdecoder {
       changeset = 0;
       uid = 0;
       user = NULL;
+      _table = NULL;
     }
     bool getTag (char **key, char **value) {
       if (_tagpos >= _taglen) return false;
@@ -135,7 +137,7 @@ namespace o5mdecoder {
   class Decoder {
     public:
     char *buffer, *docbuf, *table;
-    size_t length, pos;
+    size_t length, pos, tablesize;
     size_t doclen, docpow, docsize;
     char _err[256];
     Node _prevNode;
@@ -162,6 +164,9 @@ namespace o5mdecoder {
       length = len;
     }
     bool read (Node *node, Way *way, Rel *rel) {
+      node->_table = table;
+      way->_table = table;
+      rel->_table = table;
       size_t j;
       for (; pos < length; pos++) {
         unsigned char b = buffer[pos];
@@ -206,10 +211,26 @@ namespace o5mdecoder {
       size_t pos = 0;
       if (_prevDoc) doc->id = _prevDoc->id;
       pos += signedDelta(&(doc->id), len-pos, buf+pos); // id
-      if (buf[pos] == 0x00) { // version
+      if (buf[pos] == 0x00) { // no version
         pos++;
       } else {
-        fprintf(stderr,"versions not implemented\n");
+        pos += xunsigned(&(doc->version), len-pos, buf+pos);
+        pos += signedDelta(&(doc->timestamp), len-pos, buf+pos);
+        if (doc->timestamp != 0) {
+          pos += signedDelta(&(doc->changeset), len-pos, buf+pos);
+          if (*(buf+pos) != 0) {
+            sprintf(_err, "expected 0x00 after changeset, got 0x%x", *(buf+pos));
+            throw _err;
+          }
+          pos++;
+          pos += xunsigned(&(doc->uid), len-pos, buf+pos);
+          if (*(buf+pos) != 0) {
+            sprintf(_err, "expected 0x00 after uid, got 0x%x", *(buf+pos));
+            throw _err;
+          }
+          pos++;
+          doc->user = buf+pos;
+        }
       }
       return pos;
     }

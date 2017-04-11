@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <o5mdecoder.h>
 
-
 int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
   char *dbuf = (char*) malloc(4096);
