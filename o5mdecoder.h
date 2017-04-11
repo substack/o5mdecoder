@@ -115,8 +115,21 @@ namespace o5mdecoder {
     size_t _memlen, _mempos;
     uint64_t _ref;
     char *_membuf;
-    bool getMember (char **memtype, uint64_t *ref, char **memrole) {
-      return false;
+    bool getMember (TYPE *memtype, uint64_t *ref, char **memrole) {
+      if (_mempos >= _memlen) return false;
+      _mempos += signedDelta(&_ref, _memlen-_mempos, _membuf+_mempos);
+      *ref = _ref;
+      if (*(_membuf+_mempos) == 0) {
+        _mempos++;
+        *memtype = ((unsigned char) *(_membuf+_mempos)) - 0x20;
+        _mempos++;
+        *memrole = _membuf+_mempos;
+        for (; _mempos < _memlen && *(_membuf+_mempos) != 0; _mempos++);
+        _mempos++;
+      } else {
+        fprintf(stderr,"table ref not implemented\n");
+      }
+      return true;
     }
   };
   class Decoder {
