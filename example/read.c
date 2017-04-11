@@ -28,7 +28,7 @@ int main (int argc, char **argv) {
         } else if (d.type == o5mdecoder::WAY) {
           printf("<way id=\"%d\">\n", way.id);
           while (way.getRef(&ref)) {
-            printf("  <nd ref=\"%u\"/>\n");
+            printf("  <nd ref=\"%u\"/>\n", ref);
           }
           while (way.getTag(&key, &value)) {
             printf("  <tag k=\"%s\" v=\"%s\"/>\n",key,value);

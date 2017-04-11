@@ -100,12 +100,21 @@ namespace o5mdecoder {
   };
   class Way : public Doc {
     public:
+    size_t _reflen, _refpos;
+    uint64_t _ref;
+    char *_refbuf;
     bool getRef (uint64_t *ref) {
-      return false;
+      if (_refpos >= _reflen) return false;
+      _refpos += signedDelta(&_ref, _reflen-_refpos, _refbuf+_refpos);
+      *ref = _ref;
+      return true;
     }
   };
   class Rel : public Doc {
     public:
+    size_t _memlen, _mempos;
+    uint64_t _ref;
+    char *_membuf;
     bool getMember (char **memtype, uint64_t *ref, char **memrole) {
       return false;
     }
@@ -213,18 +222,24 @@ namespace o5mdecoder {
     }
     void _parseWay (Way *way, size_t len, char *buf) {
       size_t pos = _parseDoc(way, len, buf);
-      uint64_t length = 0;
-      pos += xunsigned(&length, len-pos, buf+pos);
-      pos += length;
+      way->_reflen = 0;
+      way->_refpos = 0;
+      way->_ref = 0;
+      pos += xunsigned(&(way->_reflen), len-pos, buf+pos);
+      way->_refbuf = buf+pos;
+      pos += way->_reflen;
       pos += _parseTags(way, len-pos, buf+pos);
       _prevWay = *way;
       _prevDoc = way;
     }
     void _parseRel (Rel *rel, size_t len, char *buf) {
       size_t pos = _parseDoc(rel, len, buf);
-      uint64_t length = 0;
-      pos += xunsigned(&length, len-pos, buf+pos);
-      pos += length;
+      rel->_memlen = 0;
+      rel->_mempos = 0;
+      rel->_ref = 0;
+      pos += xunsigned(&(rel->_memlen), len-pos, buf+pos);
+      rel->_membuf = buf+pos;
+      pos += rel->_memlen;
       pos += _parseTags(rel, len-pos, buf+pos);
       _prevRel = *rel;
       _prevDoc = rel;
