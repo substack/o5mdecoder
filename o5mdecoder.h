@@ -59,7 +59,19 @@ namespace o5mdecoder {
       user = NULL;
     }
     bool getTag (char **key, char **value) {
-      size_t i = 0;
+      if (_tagpos >= _taglen) return false;
+      if (*(_tags+_tagpos) == 0) {
+        _tagpos++;
+        *key = _tags+_tagpos;
+        for (_tagpos++;*(_tags+_tagpos) != 0 && _tagpos < _taglen; _tagpos++);
+        _tagpos++;
+        *value = _tags+_tagpos;
+        for (;*(_tags+_tagpos) != 0 && _tagpos < _taglen; _tagpos++);
+        _tagpos++;
+        return true;
+      } else {
+        fprintf(stderr,"string ref not implemented\n");
+      }
       return false;
     }
   };
@@ -84,7 +96,7 @@ namespace o5mdecoder {
   };
   class Decoder {
     public:
-    char *buffer, *docbuf;
+    char *buffer, *docbuf, *table;
     size_t length, pos;
     size_t doclen, docpow, docsize;
     char _err[256];
@@ -95,8 +107,9 @@ namespace o5mdecoder {
     TYPE type;
 
     _STATE _state;
-    Decoder (char *dbuf) {
+    Decoder (char *dbuf, char *stable) {
       _state = _BEGIN;
+      table = stable;
       buffer = NULL;
       pos = 0;
       docbuf = dbuf;
@@ -158,7 +171,7 @@ namespace o5mdecoder {
       if (buf[pos] == 0x00) { // version
         pos++;
       } else {
-        // ...
+        fprintf(stderr,"versions not implemented\n");
       }
       return pos;
     }
@@ -166,6 +179,7 @@ namespace o5mdecoder {
       doc->_tags = buf;
       doc->_taglen = len;
       doc->_tagpos = 0;
+      return len;
     }
     void _parseNode (Node *node, size_t len, char *buf) {
       size_t pos = _parseDoc(node, len, buf);
