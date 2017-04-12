@@ -2,11 +2,36 @@
 #include <stdlib.h>
 #include <o5mdecoder.h>
 
+void printTags (o5mdecoder::Doc *doc) {
+  char *key, *value;
+  while (doc->getTag(&key, &value)) {
+    printf("  <tag k=\"%s\" v=\"%s\"/>\n",key,value);
+  }
+}
+
+void printExtraAttrs (o5mdecoder::Doc *doc) {
+  if (doc->version) printf(" version=\"%u\"", doc->version);
+  if (doc->timestamp) printf(" timestamp=\"%u\"", doc->timestamp);
+  if (doc->changeset) printf(" changeset=\"%u\"", doc->changeset);
+  if (doc->uid) printf(" uid=\"%u\"", doc->uid);
+  if (doc->user) printf(" user=\"%s\"", doc->user);
+}
+
+const char *doctype (o5mdecoder::TYPE type) {
+  switch (type) {
+    case o5mdecoder::NODE: return "node\0";
+    case o5mdecoder::WAY: return "way\0";
+    case o5mdecoder::REL: return "relation\0";
+  }
+  return "?\0";
+}
+
 int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
   char *dbuf = (char*) malloc(4096);
   char *table = (char*) malloc(256*15000);
   char *key, *value, *memrole;
+  const char *dtype;
   uint64_t ref;
   o5mdecoder::TYPE memtype;
   o5mdecoder::Decoder d(dbuf,table);
@@ -20,43 +45,35 @@ int main (int argc, char **argv) {
     try {
       while (d.read(&node, &way, &rel)) {
         if (d.type == o5mdecoder::NODE) {
-          printf("<node id=\"%d\" lon=\"%f\" lat=\"%f\">\n",
+          printf("<node id=\"%d\" lon=\"%f\" lat=\"%f\"",
             node.id, node.lon, node.lat);
-          while (node.getTag(&key, &value)) {
-            printf("  <tag k=\"%s\" v=\"%s\"/>\n",key,value);
-          }
+          printExtraAttrs(&node);
+          printf(">\n");
+          printTags(&node);
           printf("</node>\n");
         } else if (d.type == o5mdecoder::WAY) {
-          printf("<way id=\"%d\">\n", way.id);
+          printf("<way id=\"%d\"", way.id);
+          printExtraAttrs(&way);
+          printf(">\n");
+          printTags(&way);
           while (way.getRef(&ref)) {
-            printf("  <nd ref=\"%u\"/>\n", ref);
-          }
-          while (way.getTag(&key, &value)) {
-            printf("  <tag k=\"%s\" v=\"%s\"/>\n",key,value);
+            printf("  <nd ref=\"%u\">\n", ref);
           }
           printf("</way>\n");
         } else if (d.type == o5mdecoder::REL) {
-          printf("<relation id=\"%d\">\n", rel.id);
+          printf("<relation id=\"%d\"", rel.id);
+          printExtraAttrs(&rel);
+          printTags(&rel);
           while (rel.getMember(&memtype,&ref,&memrole)) {
-            const char *strmemtype;
-            if (memtype == o5mdecoder::NODE) {
-              strmemtype = "node\0";
-            } else if (memtype == o5mdecoder::WAY) {
-              strmemtype = "way\0";
-            } else if (memtype == o5mdecoder::REL) {
-              strmemtype = "relation\0";
-            }
+            dtype = doctype(memtype);
             printf("  <member type=\"%s\" ref=\"%u\" role=\"%s\"/>\n",
-              strmemtype, ref, memrole);
-          }
-          while (rel.getTag(&key, &value)) {
-            printf("  <tag k=\"%s\" v=\"%s\"/>\n",key,value);
+              dtype, ref, memrole);
           }
           printf("</relation>\n");
         }
       }
     } catch (char *err) {
-      fprintf(stderr, "error: %s\n", err);
+      printf("error: %s\n", err);
     }
   } while (len == 4096);
   return 0;
