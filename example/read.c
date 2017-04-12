@@ -55,20 +55,21 @@ int main (int argc, char **argv) {
           printf("<way id=\"%d\"", way.id);
           printExtraAttrs(&way);
           printf(">\n");
-          printTags(&way);
           while (way.getRef(&ref)) {
             printf("  <nd ref=\"%u\">\n", ref);
           }
+          printTags(&way);
           printf("</way>\n");
         } else if (d.type == o5mdecoder::REL) {
           printf("<relation id=\"%d\"", rel.id);
           printExtraAttrs(&rel);
-          printTags(&rel);
+          printf(">\n");
           while (rel.getMember(&memtype,&ref,&memrole)) {
             dtype = doctype(memtype);
             printf("  <member type=\"%s\" ref=\"%u\" role=\"%s\"/>\n",
               dtype, ref, memrole);
           }
+          printTags(&rel);
           printf("</relation>\n");
         }
       }

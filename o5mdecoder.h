@@ -136,18 +136,33 @@ namespace o5mdecoder {
     uint64_t _ref;
     char *_membuf;
     bool getMember (TYPE *memtype, uint64_t *ref, char **memrole) {
+      uint64_t ntable;
+      size_t begin;
       if (_mempos >= _memlen) return false;
       _mempos += signedDelta(&_ref, _memlen-_mempos, _membuf+_mempos);
       *ref = _ref;
       if (*(_membuf+_mempos) == 0) {
         _mempos++;
+        begin = _mempos;
         *memtype = ((unsigned char) *(_membuf+_mempos)) - 0x20;
         _mempos++;
         *memrole = _membuf+_mempos;
         for (; _mempos < _memlen && *(_membuf+_mempos) != 0; _mempos++);
         _mempos++;
+        memcpy(_table+(*_tablepos)*256,_membuf+begin,_mempos-begin);
+        *_tablesize = fminl((*_tablesize)+1,MAX_TABLE_SIZE);
+        *_tablepos = ((*_tablepos)+1)%MAX_TABLE_SIZE;
       } else {
-        printf("table ref not implemented (%d)\n", *_tablesize);
+        ntable = 0;
+        _mempos += xunsigned(&ntable, _memlen-_mempos, _membuf+_mempos);
+        if (ntable > *_tablesize) {
+          sprintf(_err, "table number greater than table size: %u > %u",
+            ntable, *_tablesize);
+          throw _err;
+        }
+        begin = 256*((*_tablepos)-ntable);
+        *memtype = (unsigned char) *(_table+begin) - 0x20;
+        *memrole = _table+begin+1;
       }
       return true;
     }
@@ -205,8 +220,8 @@ namespace o5mdecoder {
           if (b < 0x80) {
             _state = _DATA;
           }
-        } else if (_state == _DATA && pos + doclen - docsize < length) {
-          j = pos + doclen - docsize;
+        } else if (_state == _DATA) {
+          j = fminl(length, pos + doclen - docsize);
           memcpy(docbuf+docsize, buffer+pos, j-pos);
           docsize += j - pos;
           pos = j;
@@ -220,9 +235,6 @@ namespace o5mdecoder {
             docsize = 0;
             return true;
           }
-        } else if (_state == _DATA) { // unaligned buffer
-          sprintf(_err, "unimplemented unaligned buffer");
-          throw _err;
         } else if (_state == _END) {
           // ...
         }
