@@ -73,6 +73,7 @@ namespace o5mdecoder {
     }
     bool getTag (char **key, char **value) {
       size_t begin, end;
+      uint64_t ntable;
       if (_tagpos >= _taglen) return false;
       if (*(_tags+_tagpos) == 0) {
         begin = ++_tagpos;
@@ -86,6 +87,9 @@ namespace o5mdecoder {
         memcpy(_table+256*_tablesize++, _tags+begin, end-begin);
         return true;
       } else {
+        ntable = 0;
+        _tagpos += xunsigned(&ntable, _taglen-_tagpos, _tags+_tagpos);
+        printf("ntable=%u\n", ntable);
         printf("table ref not implemented (%d)\n", _tablesize);
       }
       return false;
@@ -224,7 +228,7 @@ namespace o5mdecoder {
         doc->changeset = 0;
         doc->uid = 0;
       }
-      pos += signedDelta(&(doc->id), len-pos, buf+pos); // id
+      pos += signedDelta(&(doc->id), len-pos, buf+pos);
       if (buf[pos] == 0x00) { // no version
         doc->version = 0;
         doc->timestamp = 0;
@@ -246,9 +250,7 @@ namespace o5mdecoder {
             throw _err;
           }
           begin = ++pos;
-          printf("uid[0]=%u\n", doc->uid);
           pos += xunsigned(&(doc->uid), len-pos, buf+pos);
-          printf("uid[1]=%u\n", doc->uid);
           if (*(buf+pos) != 0) {
             sprintf(_err, "expected 0x00 after uid, got 0x%x", *(buf+pos));
             throw _err;
@@ -258,6 +260,8 @@ namespace o5mdecoder {
           for (; pos < len && *(buf+pos) != 0; pos++);
           pos++;
           doc->user = buf+pos;
+          for (; pos < len && *(buf+pos) != 0; pos++);
+          pos++;
         }
       }
       return pos;
