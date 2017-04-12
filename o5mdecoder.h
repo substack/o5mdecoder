@@ -64,7 +64,7 @@ namespace o5mdecoder {
     uint64_t uid;
     size_t _taglen,_tagpos;
     char *user, *_err, *_tags, *_table;
-    size_t _tablesize, _tablepos;
+    size_t *_tablesize, *_tablepos;
     Doc () {
       id = 0;
       version = 0;
@@ -73,8 +73,8 @@ namespace o5mdecoder {
       uid = 0;
       user = NULL;
       _table = NULL;
-      _tablesize = 0;
-      _tablepos = 0;
+      _tablesize = NULL;
+      _tablepos = NULL;
     }
     bool getTag (char **key, char **value) {
       size_t begin, end;
@@ -88,19 +88,19 @@ namespace o5mdecoder {
         *value = _tags+_tagpos;
         for (;*(_tags+_tagpos) != 0 && _tagpos < _taglen; _tagpos++);
         end = ++_tagpos;
-        memcpy(_table+256*_tablepos, _tags+begin, end-begin);
-        _tablepos = (_tablepos+1)%MAX_TABLE_SIZE;
-        _tablesize = imin(_tablesize+1, MAX_TABLE_SIZE);
+        memcpy(_table+256*(*_tablepos), _tags+begin, end-begin);
+        *_tablepos = ((*_tablepos)+1)%MAX_TABLE_SIZE;
+        *_tablesize = imin((*_tablesize)+1, MAX_TABLE_SIZE);
         return true;
       } else {
         ntable = 0;
         _tagpos += xunsigned(&ntable, _taglen-_tagpos, _tags+_tagpos);
-        if (ntable > _tablesize) {
+        if (ntable > *_tablesize) {
           sprintf(_err, "table number greater than table size: %u > %u",
-            ntable, _tablesize);
+            ntable, *_tablesize);
           throw _err;
         }
-        *key = _table+256*(_tablepos-ntable);
+        *key = _table+256*((*_tablepos)-ntable);
         for (begin = 0; begin < 256 && *(*key+begin) != 0; begin++);
         *value = begin+*key+1;
         return true;
@@ -150,7 +150,7 @@ namespace o5mdecoder {
         for (; _mempos < _memlen && *(_membuf+_mempos) != 0; _mempos++);
         _mempos++;
       } else {
-        printf("table ref not implemented (%d)\n", _tablesize);
+        printf("table ref not implemented (%d)\n", *_tablesize);
       }
       return true;
     }
@@ -295,7 +295,8 @@ namespace o5mdecoder {
     }
     void _parseNode (Node *node, size_t len, char *buf) {
       node->_table = table;
-      node->_tablesize = tablesize;
+      node->_tablesize = &tablesize;
+      node->_tablepos = &tablepos;
       node->_err = _err;
       size_t pos = _parseDoc(node, len, buf);
       int64_t ulat = _prevNode.ulat;
@@ -312,7 +313,8 @@ namespace o5mdecoder {
     }
     void _parseWay (Way *way, size_t len, char *buf) {
       way->_table = table;
-      way->_tablesize = tablesize;
+      way->_tablesize = &tablesize;
+      way->_tablepos = &tablepos;
       way->_err = _err;
       size_t pos = _parseDoc(way, len, buf);
       way->_reflen = 0;
@@ -327,7 +329,8 @@ namespace o5mdecoder {
     }
     void _parseRel (Rel *rel, size_t len, char *buf) {
       rel->_table = table;
-      rel->_tablesize = tablesize;
+      rel->_tablesize = &tablesize;
+      rel->_tablepos = &tablepos;
       rel->_err = _err;
       size_t pos = _parseDoc(rel, len, buf);
       rel->_memlen = 0;
