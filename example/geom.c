@@ -4,6 +4,13 @@
 #include <map>
 #include <o5mdecoder.h>
 
+struct Point {
+  float lon, lat;
+  Point (float _lon, float _lat) {
+    lon=_lon; lat=_lat;
+  }
+};
+
 int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
   char *dbuf = (char*) malloc(4096);
@@ -12,13 +19,9 @@ int main (int argc, char **argv) {
   o5mdecoder::Node node;
   o5mdecoder::Way way;
   o5mdecoder::Rel rel;
-  size_t nodelen = 1000000;
-  float *nodebuf = (float*) malloc(nodelen);
-  size_t nodepos = 0;
   uint64_t ref;
-  o5mdecoder::TYPE memtype;
-  char *key, *value, *memrole;
-  std::map<uint64_t,float*> nodes;
+  std::map<uint64_t,Point*> nodes;
+  std::map<uint64_t,Point*>::const_iterator ipt;
 
   size_t len;
   do {
@@ -27,26 +30,14 @@ int main (int argc, char **argv) {
     try {
       while (d.read(&node, &way, &rel)) {
         if (d.type == o5mdecoder::NODE) {
-          printf("node: %f,%f\n", node.lon, node.lat);
-          nodebuf[nodepos] = node.lon;
-          nodebuf[nodepos+1] = node.lat;
-          nodes[node.id] = nodebuf+nodepos;
-          nodepos += 2;
-          if (nodepos >= nodelen) {
-            fprintf(stderr,"node size too small\n");
-            return 1;
-          }
-          while (node.getTag(&key,&value));
+          nodes[node.id] = new Point(node.lon,node.lat);
         } else if (d.type == o5mdecoder::WAY) {
-          printf("way:");
           while (way.getRef(&ref)) {
-            printf(" %f,%f", nodes[ref][0], nodes[ref][1]);
+            ipt = nodes.find(ref);
+            if (ipt == nodes.end()) continue;
+            printf("%f,%f ", ipt->second->lon, ipt->second->lat);
           }
           printf("\n");
-          while (way.getTag(&key,&value));
-        } else if (d.type == o5mdecoder::REL) {
-          while (rel.getMember(&memtype,&ref,&memrole));
-          while (rel.getTag(&key,&value));
         }
       }
     } catch (char *err) {
