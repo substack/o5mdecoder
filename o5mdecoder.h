@@ -123,6 +123,9 @@ namespace o5mdecoder {
     size_t _reflen, _refpos;
     uint64_t _ref;
     char *_refbuf;
+    Way () {
+      _ref = 0;
+    }
     bool getRef (uint64_t *ref) {
       if (_refpos >= _reflen) return false;
       _refpos += signedDelta(&_ref, _reflen-_refpos, _refbuf+_refpos);
@@ -219,6 +222,9 @@ namespace o5mdecoder {
         } else if (_state == _TYPE && b == 0xff) { // reset
           _state = _TYPE;
           _prevDoc = NULL;
+          _prevNode = NULL;
+          _prevWay = NULL;
+          _prevRel = NULL;
         } else if (_state == _TYPE) {
           _state = _LEN;
           type = b;
@@ -340,7 +346,7 @@ namespace o5mdecoder {
       size_t pos = _parseDoc(way, len, buf);
       way->_reflen = 0;
       way->_refpos = 0;
-      way->_ref = 0;
+      way->_ref = _prevWay ? _prevWay->_ref : 0;
       pos += xunsigned(&(way->_reflen), len-pos, buf+pos);
       way->_refbuf = buf+pos;
       pos += way->_reflen;
