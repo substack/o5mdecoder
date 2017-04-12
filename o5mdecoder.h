@@ -215,53 +215,54 @@ namespace o5mdecoder {
     }
     size_t _parseDoc (Doc *doc, size_t len, char *buf) {
       size_t pos = 0, begin = 0;
+      uint64_t ntable;
       if (_prevDoc) {
         doc->id = _prevDoc->id;
-        doc->version = _prevDoc->version;
         doc->timestamp = _prevDoc->timestamp;
         doc->changeset = _prevDoc->changeset;
-        doc->uid = _prevDoc->uid;
       } else {
         doc->id = 0;
         doc->version = 0;
         doc->timestamp = 0;
         doc->changeset = 0;
-        doc->uid = 0;
       }
+      doc->version = 0;
+      doc->uid = 0;
+      doc->user = NULL;
       pos += signedDelta(&(doc->id), len-pos, buf+pos);
       if (buf[pos] == 0x00) { // no version
         doc->version = 0;
         doc->timestamp = 0;
         doc->changeset = 0;
-        doc->uid = 0;
-        doc->user = NULL;
         pos++;
       } else {
         pos += xunsigned(&(doc->version), len-pos, buf+pos);
         pos += signedDelta(&(doc->timestamp), len-pos, buf+pos);
         if (doc->timestamp == 0) {
           doc->changeset = 0;
-          doc->uid = 0;
-          doc->user = NULL;
         } else {
           pos += signedDelta(&(doc->changeset), len-pos, buf+pos);
-          if (*(buf+pos) != 0) {
-            sprintf(_err, "expected 0x00 after changeset, got 0x%x", *(buf+pos));
-            throw _err;
+          if (*(buf+pos) == 0) { // inline string
+            begin = ++pos;
+            pos += xunsigned(&(doc->uid), len-pos, buf+pos);
+            if (*(buf+pos) != 0) {
+              sprintf(_err, "expected 0x00 after uid, got 0x%x", *(buf+pos));
+              throw _err;
+            }
+            for (; pos < len && *(buf+pos) != 0; pos++);
+            pos++;
+            doc->user = buf+pos;
+            for (; pos < len && *(buf+pos) != 0; pos++);
+            pos++;
+            memcpy(table+tablesize*256,buf+begin,pos-begin);
+            tablesize++;
+          } else { // string table lookup
+            ntable = 0;
+            pos += xunsigned(&ntable, len-pos, buf+pos);
+            ntable--;
+            begin = xunsigned(&(doc->uid), 256, table+256*ntable);
+            doc->user = table+256*ntable+begin+1;
           }
-          begin = ++pos;
-          pos += xunsigned(&(doc->uid), len-pos, buf+pos);
-          if (*(buf+pos) != 0) {
-            sprintf(_err, "expected 0x00 after uid, got 0x%x", *(buf+pos));
-            throw _err;
-          }
-          memcpy(table+tablesize*256,buf+begin,pos-begin);
-          tablesize++;
-          for (; pos < len && *(buf+pos) != 0; pos++);
-          pos++;
-          doc->user = buf+pos;
-          for (; pos < len && *(buf+pos) != 0; pos++);
-          pos++;
         }
       }
       return pos;
