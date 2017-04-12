@@ -169,13 +169,14 @@ namespace o5mdecoder {
   };
   class Decoder {
     public:
-    char *buffer, *docbuf, *table;
-    size_t length, pos, tablesize, tablepos;
+    char *buffer, *docbuf, *table, *_key, *_value, *_memrole;
+    TYPE _memtype;
+    size_t length, pos, tablesize, tablepos, _ref;
     size_t doclen, docpow, docsize;
     char _err[256];
-    Node _prevNode;
-    Way _prevWay;
-    Rel _prevRel;
+    Node *_prevNode;
+    Way *_prevWay;
+    Rel *_prevRel;
     Doc *_prevDoc;
     TYPE type;
 
@@ -193,6 +194,9 @@ namespace o5mdecoder {
       doclen = 0;
       docsize = 0;
       _prevDoc = NULL;
+      _prevNode = NULL;
+      _prevWay = NULL;
+      _prevRel = NULL;
     }
     void write (char *data, size_t len) {
       buffer = data;
@@ -200,6 +204,10 @@ namespace o5mdecoder {
       pos = 0;
     }
     bool read (Node *node, Way *way, Rel *rel) {
+      if (_prevDoc) while (_prevDoc->getTag(&_key,&_value));
+      if (_prevWay) while (_prevWay->getRef(&_ref));
+      if (_prevRel) while (_prevRel->getMember(&_memtype,&_ref,&_memrole));
+
       size_t j;
       for (; pos < length; pos++) {
         unsigned char b = buffer[pos];
@@ -312,8 +320,8 @@ namespace o5mdecoder {
       node->_tablepos = &tablepos;
       node->_err = _err;
       size_t pos = _parseDoc(node, len, buf);
-      int64_t ulat = _prevNode.ulat;
-      int64_t ulon = _prevNode.ulon;
+      int64_t ulat = _prevNode ? _prevNode->ulat : 0;
+      int64_t ulon = _prevNode ? _prevNode->ulon : 0;
       pos += signedDelta(&ulon, len-pos, buf+pos); // lon
       pos += signedDelta(&ulat, len-pos, buf+pos); // lat
       node->ulon = ulon;
@@ -321,7 +329,7 @@ namespace o5mdecoder {
       node->lon = ((double) ulon) / 1e7;
       node->lat = ((double) ulat) / 1e7;
       pos += _parseTags(node, len-pos, buf+pos);
-      _prevNode = *node;
+      _prevNode = node;
       _prevDoc = node;
     }
     void _parseWay (Way *way, size_t len, char *buf) {
@@ -337,7 +345,7 @@ namespace o5mdecoder {
       way->_refbuf = buf+pos;
       pos += way->_reflen;
       pos += _parseTags(way, len-pos, buf+pos);
-      _prevWay = *way;
+      _prevWay = way;
       _prevDoc = way;
     }
     void _parseRel (Rel *rel, size_t len, char *buf) {
@@ -353,7 +361,7 @@ namespace o5mdecoder {
       rel->_membuf = buf+pos;
       pos += rel->_memlen;
       pos += _parseTags(rel, len-pos, buf+pos);
-      _prevRel = *rel;
+      _prevRel = rel;
       _prevDoc = rel;
     }
   };
