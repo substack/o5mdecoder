@@ -12,9 +12,6 @@ namespace o5mdecoder {
   const TYPE WAY = 0x11;
   const TYPE REL = 0x12;
   const uint32_t MAX_TABLE_SIZE = 15000;
-  uint32_t imin (uint32_t a, uint32_t b) {
-    return a < b ? a : b;
-  }
   enum _STATE {
     _BEGIN = 1,
     _TYPE = 2,
@@ -90,7 +87,7 @@ namespace o5mdecoder {
         end = ++_tagpos;
         memcpy(_table+256*(*_tablepos), _tags+begin, end-begin);
         *_tablepos = ((*_tablepos)+1)%MAX_TABLE_SIZE;
-        *_tablesize = imin((*_tablesize)+1, MAX_TABLE_SIZE);
+        *_tablesize = fminl((*_tablesize)+1, MAX_TABLE_SIZE);
         return true;
       } else {
         ntable = 0;
@@ -185,6 +182,7 @@ namespace o5mdecoder {
     void write (char *data, size_t len) {
       buffer = data;
       length = len;
+      pos = 0;
     }
     bool read (Node *node, Way *way, Rel *rel) {
       size_t j;
@@ -207,8 +205,8 @@ namespace o5mdecoder {
           if (b < 0x80) {
             _state = _DATA;
           }
-        } else if (_state == _DATA) {
-          j = fminl(length, pos + doclen - docsize);
+        } else if (_state == _DATA && pos + doclen - docsize < length) {
+          j = pos + doclen - docsize;
           memcpy(docbuf+docsize, buffer+pos, j-pos);
           docsize += j - pos;
           pos = j;
@@ -222,6 +220,9 @@ namespace o5mdecoder {
             docsize = 0;
             return true;
           }
+        } else if (_state == _DATA) { // unaligned buffer
+          sprintf(_err, "unimplemented unaligned buffer");
+          throw _err;
         } else if (_state == _END) {
           // ...
         }
@@ -270,7 +271,7 @@ namespace o5mdecoder {
             for (; pos < len && *(buf+pos) != 0; pos++);
             pos++;
             memcpy(table+tablepos*256,buf+begin,pos-begin);
-            tablesize = imin(tablesize+1,MAX_TABLE_SIZE);
+            tablesize = fminl(tablesize+1,MAX_TABLE_SIZE);
             tablepos = (tablepos+1)%MAX_TABLE_SIZE;
           } else { // string table lookup
             ntable = 0;
