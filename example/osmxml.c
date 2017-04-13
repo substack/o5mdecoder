@@ -33,7 +33,7 @@ int main (int argc, char **argv) {
   char *key, *value, *memrole;
   const char *dtype;
   uint64_t ref;
-  o5mdecoder::TYPE memtype;
+  o5mdecoder::Member member;
   o5mdecoder::Decoder d(dbuf,table);
   size_t len;
   do {
@@ -61,8 +61,8 @@ int main (int argc, char **argv) {
           printf("<relation id=\"%d\"", d.rel->id);
           printExtraAttrs(d.rel);
           printf(">\n");
-          while (d.rel->getMember(&memtype,&ref,&memrole)) {
-            dtype = doctype(memtype);
+          while (d.rel->getMember(member)) {
+            dtype = doctype(member.type);
             printf("  <member type=\"%s\" ref=\"%u\" role=\"%s\"/>\n",
               dtype, ref, memrole);
           }

@@ -51,6 +51,11 @@ namespace o5mdecoder {
   size_t xunsigned (int64_t *d, size_t len, char *data) {
     return xunsigned((uint64_t*)d, len, data);
   }
+  struct Member {
+    TYPE type;
+    uint64_t ref;
+    char *role;
+  };
   class Doc {
     public:
     TYPE type;
@@ -138,6 +143,9 @@ namespace o5mdecoder {
     size_t _memlen, _mempos;
     uint64_t _ref;
     char *_membuf;
+    bool getMember (Member &member) {
+      return getMember(&(member.type),&(member.ref),&(member.role));
+    }
     bool getMember (TYPE *memtype, uint64_t *ref, char **memrole) {
       uint64_t ntable;
       size_t begin;
