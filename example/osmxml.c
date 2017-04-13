@@ -35,41 +35,38 @@ int main (int argc, char **argv) {
   uint64_t ref;
   o5mdecoder::TYPE memtype;
   o5mdecoder::Decoder d(dbuf,table);
-  o5mdecoder::Node node;
-  o5mdecoder::Way way;
-  o5mdecoder::Rel rel;
   size_t len;
   do {
     len = fread(data, sizeof(char), 4096, stdin);
     d.write(data, len);
     try {
-      while (d.read(&node, &way, &rel)) {
-        if (d.type == o5mdecoder::NODE) {
+      while (d.read()) {
+        if (d.node) {
           printf("<node id=\"%d\" lon=\"%f\" lat=\"%f\"",
-            node.id, node.lon, node.lat);
-          printExtraAttrs(&node);
+            d.node->id, d.node->lon, d.node->lat);
+          printExtraAttrs(d.node);
           printf(">\n");
-          printTags(&node);
+          printTags(d.node);
           printf("</node>\n");
-        } else if (d.type == o5mdecoder::WAY) {
-          printf("<way id=\"%d\"", way.id);
-          printExtraAttrs(&way);
+        } else if (d.way) {
+          printf("<way id=\"%d\"", d.way->id);
+          printExtraAttrs(d.way);
           printf(">\n");
-          while (way.getRef(&ref)) {
+          while (d.way->getRef(&ref)) {
             printf("  <nd ref=\"%u\">\n", ref);
           }
-          printTags(&way);
+          printTags(d.way);
           printf("</way>\n");
-        } else if (d.type == o5mdecoder::REL) {
-          printf("<relation id=\"%d\"", rel.id);
-          printExtraAttrs(&rel);
+        } else if (d.rel) {
+          printf("<relation id=\"%d\"", d.rel->id);
+          printExtraAttrs(d.rel);
           printf(">\n");
-          while (rel.getMember(&memtype,&ref,&memrole)) {
+          while (d.rel->getMember(&memtype,&ref,&memrole)) {
             dtype = doctype(memtype);
             printf("  <member type=\"%s\" ref=\"%u\" role=\"%s\"/>\n",
               dtype, ref, memrole);
           }
-          printTags(&rel);
+          printTags(d.rel);
           printf("</relation>\n");
         }
       }

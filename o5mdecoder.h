@@ -177,6 +177,12 @@ namespace o5mdecoder {
     size_t length, pos, tablesize, tablepos, _ref;
     size_t doclen, docpow, docsize;
     char _err[256];
+    Node *node;
+    Node _node;
+    Way *way;
+    Way _way;
+    Rel *rel;
+    Rel _rel;
     Node *_prevNode;
     Way *_prevWay;
     Rel *_prevRel;
@@ -196,17 +202,35 @@ namespace o5mdecoder {
       docpow = 1;
       doclen = 0;
       docsize = 0;
+      node = NULL;
+      way = NULL;
+      rel = NULL;
       _prevDoc = NULL;
       _prevNode = NULL;
       _prevWay = NULL;
       _prevRel = NULL;
+      _node._table = table;
+      _node._tablesize = &tablesize;
+      _node._tablepos = &tablepos;
+      _node._err = _err;
+      _way._table = table;
+      _way._tablesize = &tablesize;
+      _way._tablepos = &tablepos;
+      _way._err = _err;
+      _rel._table = table;
+      _rel._tablesize = &tablesize;
+      _rel._tablepos = &tablepos;
+      _rel._err = _err;
     }
     void write (char *data, size_t len) {
       buffer = data;
       length = len;
       pos = 0;
     }
-    bool read (Node *node, Way *way, Rel *rel) {
+    bool read () {
+      node = NULL;
+      way = NULL;
+      rel = NULL;
       if (_prevDoc) while (_prevDoc->getTag(&_key,&_value));
       if (_prevWay) while (_prevWay->getRef(&_ref));
       if (_prevRel) while (_prevRel->getMember(&_memtype,&_ref,&_memrole));
@@ -240,9 +264,9 @@ namespace o5mdecoder {
           docsize += j - pos;
           pos = j;
           if (docsize == doclen) {
-            if (type == NODE) _parseNode(node, doclen, docbuf);
-            else if (type == WAY) _parseWay(way, doclen, docbuf);
-            else if (type == REL) _parseRel(rel, doclen, docbuf);
+            if (type == NODE) _parseNode(doclen, docbuf);
+            else if (type == WAY) _parseWay(doclen, docbuf);
+            else if (type == REL) _parseRel(doclen, docbuf);
             _state = _TYPE;
             doclen = 0;
             docpow = 1;
@@ -320,11 +344,8 @@ namespace o5mdecoder {
       doc->_tagpos = 0;
       return len;
     }
-    void _parseNode (Node *node, size_t len, char *buf) {
-      node->_table = table;
-      node->_tablesize = &tablesize;
-      node->_tablepos = &tablepos;
-      node->_err = _err;
+    void _parseNode (size_t len, char *buf) {
+      node = &_node;
       size_t pos = _parseDoc(node, len, buf);
       int64_t ulat = _prevNode ? _prevNode->ulat : 0;
       int64_t ulon = _prevNode ? _prevNode->ulon : 0;
@@ -338,11 +359,8 @@ namespace o5mdecoder {
       _prevNode = node;
       _prevDoc = node;
     }
-    void _parseWay (Way *way, size_t len, char *buf) {
-      way->_table = table;
-      way->_tablesize = &tablesize;
-      way->_tablepos = &tablepos;
-      way->_err = _err;
+    void _parseWay (size_t len, char *buf) {
+      way = &_way;
       size_t pos = _parseDoc(way, len, buf);
       way->_reflen = 0;
       way->_refpos = 0;
@@ -354,11 +372,8 @@ namespace o5mdecoder {
       _prevWay = way;
       _prevDoc = way;
     }
-    void _parseRel (Rel *rel, size_t len, char *buf) {
-      rel->_table = table;
-      rel->_tablesize = &tablesize;
-      rel->_tablepos = &tablepos;
-      rel->_err = _err;
+    void _parseRel (size_t len, char *buf) {
+      rel = &_rel;
       size_t pos = _parseDoc(rel, len, buf);
       rel->_memlen = 0;
       rel->_mempos = 0;
