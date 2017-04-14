@@ -15,12 +15,7 @@ denormalize lon/lat geometry as arrays of points for each way
 #include <map>
 #include <o5mdecoder.h>
 
-struct Point {
-  float lon, lat;
-  Point (float _lon, float _lat) {
-    lon=_lon; lat=_lat;
-  }
-};
+struct Point { float lon, lat; };
 
 int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
@@ -28,8 +23,9 @@ int main (int argc, char **argv) {
   char *table = (char*) malloc(256*15000);
   o5mdecoder::Decoder d(dbuf,table);
   uint64_t ref;
-  std::map<uint64_t,Point*> nodes;
-  std::map<uint64_t,Point*>::const_iterator ipt;
+  std::map<uint64_t,Point> nodes;
+  std::map<uint64_t,Point>::const_iterator ipt;
+  Point *pt;
 
   size_t len;
   do {
@@ -38,12 +34,14 @@ int main (int argc, char **argv) {
     try {
       while (d.read()) {
         if (d.node) {
-          nodes[d.node->id] = new Point(d.node->lon,d.node->lat);
+          pt = &(nodes[d.node->id]);
+          pt->lon = d.node->lon;
+          pt->lat = d.node->lat;
         } else if (d.way) {
           while (d.way->getRef(&ref)) {
             ipt = nodes.find(ref);
             if (ipt == nodes.end()) continue;
-            printf("%f,%f ", ipt->second->lon, ipt->second->lat);
+            printf("%f,%f ", ipt->second.lon, ipt->second.lat);
           }
           printf("\n");
         }

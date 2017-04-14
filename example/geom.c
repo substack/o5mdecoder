@@ -4,9 +4,7 @@
 #include <map>
 #include <o5mdecoder.h>
 
-struct Point {
-  float lon, lat;
-};
+struct Point { float lon, lat; };
 
 int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
