@@ -166,7 +166,17 @@ Return true as long as data was read. Returns false when there is no more data.
 
 ## `o5mdecoder::TYPE member.type`
 
+Type of the member. Compare with `o5mdecoder::NODE`, `o5mdecoder::WAY`, and
+`o5mdecoder::REL`.
+
 ## `uint64_t member.ref`
+
+Reference id of the member.
 
 ## `char* member.role`
 
+Role of the member (things like "inner" and "outer").
+
+# license
+
+BSD
