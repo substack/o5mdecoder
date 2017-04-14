@@ -143,21 +143,18 @@ namespace o5mdecoder {
     size_t _memlen, _mempos;
     uint64_t _ref;
     char *_membuf;
-    bool getMember (Member &member) {
-      return getMember(&(member.type),&(member.ref),&(member.role));
-    }
-    bool getMember (TYPE *memtype, uint64_t *ref, char **memrole) {
+    bool getMember (Member *member) {
       uint64_t ntable;
       size_t begin;
       if (_mempos >= _memlen) return false;
       _mempos += signedDelta(&_ref, _memlen-_mempos, _membuf+_mempos);
-      *ref = _ref;
+      member->ref = _ref;
       if (*(_membuf+_mempos) == 0) {
         _mempos++;
         begin = _mempos;
-        *memtype = ((unsigned char) *(_membuf+_mempos)) - 0x20;
+        member->type = ((unsigned char) *(_membuf+_mempos)) - 0x20;
         _mempos++;
-        *memrole = _membuf+_mempos;
+        member->role = _membuf+_mempos;
         for (; _mempos < _memlen && *(_membuf+_mempos) != 0; _mempos++);
         _mempos++;
         memcpy(_table+(*_tablepos)*256,_membuf+begin,_mempos-begin);
@@ -172,19 +169,19 @@ namespace o5mdecoder {
           throw _err;
         }
         begin = 256*((*_tablepos)-ntable);
-        *memtype = (unsigned char) *(_table+begin) - 0x20;
-        *memrole = _table+begin+1;
+        member->type = (unsigned char) *(_table+begin) - 0x20;
+        member->role = _table+begin+1;
       }
       return true;
     }
   };
   class Decoder {
     public:
-    char *buffer, *docbuf, *table, *_key, *_value, *_memrole;
-    TYPE _memtype;
+    char *buffer, *docbuf, *table, *_key, *_value;
     size_t length, pos, tablesize, tablepos, _ref;
     size_t doclen, docpow, docsize;
     char _err[256];
+    Member _member;
     Node *node;
     Node _node;
     Way *way;
@@ -241,7 +238,7 @@ namespace o5mdecoder {
       rel = NULL;
       if (_prevDoc) while (_prevDoc->getTag(&_key,&_value));
       if (_prevWay) while (_prevWay->getRef(&_ref));
-      if (_prevRel) while (_prevRel->getMember(&_memtype,&_ref,&_memrole));
+      if (_prevRel) while (_prevRel->getMember(&_member));
 
       size_t j;
       for (; pos < length; pos++) {

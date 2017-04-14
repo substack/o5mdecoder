@@ -30,8 +30,7 @@ int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
   char *dbuf = (char*) malloc(4096);
   char *table = (char*) malloc(256*15000);
-  char *key, *value, *memrole;
-  const char *dtype;
+  char *key, *value;
   uint64_t ref;
   o5mdecoder::Member member;
   o5mdecoder::Decoder d(dbuf,table);
@@ -61,10 +60,9 @@ int main (int argc, char **argv) {
           printf("<relation id=\"%d\"", d.rel->id);
           printExtraAttrs(d.rel);
           printf(">\n");
-          while (d.rel->getMember(member)) {
-            dtype = doctype(member.type);
+          while (d.rel->getMember(&member)) {
             printf("  <member type=\"%s\" ref=\"%u\" role=\"%s\"/>\n",
-              dtype, ref, memrole);
+              doctype(member.type), member.ref, member.role);
           }
           printTags(d.rel);
           printf("</relation>\n");
