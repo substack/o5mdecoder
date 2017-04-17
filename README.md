@@ -19,9 +19,9 @@ struct Point { float lon, lat; };
 
 int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
-  char *dbuf = (char*) malloc(4096);
+  char *dbuf = (char*) malloc(16384);
   char *table = (char*) malloc(256*15000);
-  o5mdecoder::Decoder d(dbuf,table);
+  o5mdecoder::Decoder d(dbuf,16384,table);
   uint64_t ref;
   std::map<uint64_t,Point> nodes;
   std::map<uint64_t,Point>::const_iterator ipt;
@@ -60,13 +60,16 @@ int main (int argc, char **argv) {
 #include <o5mdecoder.h>
 ```
 
-## `o5mdecoder::Decoder decoder(char *buffer, char *table)`
+## `o5mdecoder::Decoder decoder(char *buffer, size_t buflen, char *table)`
 
-Initialie a new `decoder` instance given a `buffer` and `table`.
+Initialie a new `decoder` instance given a `buffer` of size `buflen` and
+`table`.
 
 The `buffer` is used to copy data as you read it in from the file and must be
 greater than or equal to the size of the largest document in compressed binary
-o5m form. 
+o5m form. You should allocate a `buffer` that is large enough to contain the
+largest contiguous document from the source data. If the buffer is to small you
+will get a `Buffer space exceeded.` exception.
 
 The `table` is used to store strings in order to refer back to them. The o5m
 format states that the string table should be able to hold 15000 entries where

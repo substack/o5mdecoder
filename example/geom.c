@@ -8,9 +8,9 @@ struct Point { float lon, lat; };
 
 int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
-  char *dbuf = (char*) malloc(4096);
+  char *dbuf = (char*) malloc(16384);
   char *table = (char*) malloc(256*15000);
-  o5mdecoder::Decoder d(dbuf,table);
+  o5mdecoder::Decoder d(dbuf,16384,table);
   uint64_t ref;
   std::map<uint64_t,Point> nodes;
   std::map<uint64_t,Point>::const_iterator ipt;

@@ -178,7 +178,7 @@ namespace o5mdecoder {
   class Decoder {
     public:
     char *buffer, *docbuf, *table, *_key, *_value;
-    size_t length, pos, tablesize, tablepos, _ref;
+    size_t length, docbuflen, pos, tablesize, tablepos, _ref;
     size_t doclen, docpow, docsize;
     char _err[256];
     Member _member;
@@ -195,7 +195,7 @@ namespace o5mdecoder {
     TYPE type;
 
     _STATE _state;
-    Decoder (char *dbuf, char *stable) {
+    Decoder (char *dbuf, size_t buflen, char *stable) {
       _state = _BEGIN;
       table = stable;
       tablesize = 0;
@@ -203,6 +203,7 @@ namespace o5mdecoder {
       buffer = NULL;
       pos = 0;
       docbuf = dbuf;
+      docbuflen = buflen;
       length = 0;
       docpow = 1;
       doclen = 0;
@@ -265,6 +266,10 @@ namespace o5mdecoder {
           }
         } else if (_state == _DATA) {
           j = fminl(length, pos + doclen - docsize);
+          if (docsize+j-pos >= docbuflen) {
+            sprintf(_err, "Buffer space exceeded. Try using a larger buffer.");
+            throw _err;
+          }
           memcpy(docbuf+docsize, buffer+pos, j-pos);
           docsize += j - pos;
           pos = j;

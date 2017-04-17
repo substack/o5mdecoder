@@ -28,12 +28,12 @@ const char *doctype (o5mdecoder::TYPE type) {
 
 int main (int argc, char **argv) {
   char *data = (char*) malloc(4096);
-  char *dbuf = (char*) malloc(4096);
+  char *dbuf = (char*) malloc(16384);
   char *table = (char*) malloc(256*15000);
   char *key, *value;
   uint64_t ref;
   o5mdecoder::Member member;
-  o5mdecoder::Decoder d(dbuf,table);
+  o5mdecoder::Decoder d(dbuf,16384,table);
   size_t len;
   do {
     len = fread(data, sizeof(char), 4096, stdin);
