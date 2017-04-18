@@ -157,13 +157,15 @@ when a ref was not read.
 
 Inherits from o5mdecoder::Doc.
 
-## `bool rel.getMember(Member member)`
+## `bool rel.getMember(Member *member)`
 
-Read member data from the relation by reference into `member`.
+Read member data into `member`.
 
 Return true as long as data was read. Returns false when there is no more data.
 
 ## `o5mdecoder::Member member`
+
+Create container for member data.
 
 ## `o5mdecoder::TYPE member.type`
 
